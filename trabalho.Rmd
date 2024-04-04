@@ -10,6 +10,9 @@ output:
 ---
 ```{r echo=FALSE}
 options(digits=3)
+RNGkind("Mersenne-Twister")
+RNGversion("4.1.2")
+set.seed(1752031105)
 ```
 
 ```{r}
