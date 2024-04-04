@@ -1,17 +1,16 @@
 ---
-title: "Trabalho 1 - Estatística computacional"
-author:
-   - Rafael Alisson Schipiura
-   - Matheus Cabus
-date: 4 de Abril de 2024
-fontsize: 8pt
-output: 
-   md_document:
-      variant: gfm
-   beamer_presentation:
-      slide_level: 2
+title: Trabalho de Estatística Computacional sobre erros Tipo I e Tipo II    
+author:    
+   - Rafael Alisson Schipiura    
+   - Matheus Cabus    
+date: 4 de Abril de 2024    
+fontsize: 8pt    
+output:    
+   beamer_presentation:    
+      slide_level: 2    
       latex_engine: xelatex
 ---
+
 ```{r echo=FALSE}
 options(digits=3)
 RNGkind("Mersenne-Twister")
@@ -20,6 +19,7 @@ set.seed(1752031105)
 library(formatR)
 knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 60), tidy = TRUE)
 ```
+
 ## Slide 1
 
 ```{r}
