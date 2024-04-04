@@ -6,6 +6,8 @@ author:
 date: 4 de Abril de 2024
 fontsize: 8pt
 output: 
+   md_document:
+      variant: gfm
    beamer_presentation:
       slide_level: 2
       latex_engine: xelatex
