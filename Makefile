@@ -5,15 +5,17 @@ PDF=trabalho.pdf
 
 README=README.md
 
+LEIAME=leiame.Rmd
+
 all: $(PDF) $(README)
 
 .PHONY : all clean
 
-$(PDF) : $(RMD)
-	Rscript -e "rmarkdown::render('$(RMD)', output_format='beamer_presentation')"
+$(PDF) : $(RMD) 
+	Rscript -e "rmarkdown::render('$(RMD)')"
 
-$(README) : $(RMD)
-	Rscript -e "rmarkdown::render('$(RMD)', output_format='md_document', output_file='README.md')"
+$(README) : $(LEIAME)
+	Rscript -e "rmarkdown::render('$(LEIAME)', output_file='$(README)')"
 
 clean :
-	rm trabalho.pdf
+	rm trabalho.pdf *.log
