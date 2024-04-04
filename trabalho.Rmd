@@ -4,6 +4,7 @@ author:
    - Rafael Alisson Schipiura
    - Matheus Cabus
 date: 4 de Abril de 2024
+fontsize: 8pt
 output: 
    beamer_presentation:
       slide_level: 2
@@ -14,6 +15,8 @@ options(digits=3)
 RNGkind("Mersenne-Twister")
 RNGversion("4.1.2")
 set.seed(1752031105)
+library(formatR)
+knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 60), tidy = TRUE)
 ```
 ## Slide 1
 
@@ -68,8 +71,10 @@ cobertura <- function(n_c, p_c){
 ## Slide 4 
 
 ```{r}
-resultado <- data.frame(Cobertura=paste0(100*rowMeans(replicate(1000, cobertura(n, p))) , "%"))
-rownames(resultado) <- c("Teste de Wald", "Teste Conservador", "Teste Verosimilhança", "Teste de Jeffreys", "Teste prop.test")
+resultado <- data.frame(Cobertura=
+			paste0(100*rowMeans(replicate(1000, cobertura(n, p))) , "%"))
+rownames(resultado) <- c("Teste de Wald", "Teste Conservador",
+			 "Teste Verosimilhança", "Teste de Jeffreys", "Teste prop.test")
 
 knitr::kable(resultado)
 
