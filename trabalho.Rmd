@@ -2,7 +2,7 @@
 title: Trabalho de Estatística Computacional sobre erros Tipo I e Tipo II    
 author:    
    - Rafael Alisson Schipiura    
-   - Matheus Cabus    
+   - Matheus Born Cabús 
 date: 4 de Abril de 2024    
 fontsize: 8pt    
 output:    
@@ -46,7 +46,8 @@ estimar_cons <- function(x, n, z = 1.959964) {
 }
 estimar_vero <- function(x, n){
    p_hat_v <- x/n
-   return(c(uniroot(lim.fc, c(0,p_hat_v), x, n)$root, uniroot(lim.fc, c(p_hat_v, 1), x, n)$root))
+   return(c(uniroot(lim.fc, c(0,p_hat_v), x, n)$root, 
+	    uniroot(lim.fc, c(p_hat_v, 1), x, n)$root))
 }
  
 

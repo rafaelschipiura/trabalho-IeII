@@ -3,7 +3,7 @@
 ## Autores
 
   - Rafael Alisson Schipiura
-  - Matheus Cabus
+  - Matheus Born Cabús
 
 -----
 
