@@ -5,7 +5,7 @@ PDF=trabalho.pdf
 
 README=README.md
 
-LEIAME=leiame.Rmd
+LEIAME=fonte-rdm.Rmd
 
 all: $(PDF) $(README)
 
