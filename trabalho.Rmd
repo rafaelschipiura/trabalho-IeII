@@ -71,6 +71,6 @@ cobertura <- function(n_c, p_c){
 resultado <- data.frame(Cobertura=paste0(100*rowMeans(replicate(1000, cobertura(n, p))) , "%"))
 rownames(resultado) <- c("Teste de Wald", "Teste Conservador", "Teste Verosimilhança", "Teste de Jeffreys", "Teste prop.test")
 
-resultado
+knitr::kable(resultado)
 
 ```
