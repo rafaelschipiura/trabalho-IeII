@@ -50,7 +50,8 @@ resultado <- vector("list", length(tamanhos))
 names(resultado) <- tamanhos
 for(n in tamanhos){
    resultado[[as.character(n)]] <- matrix(nrow=length(significancias), ncol=2) 
-   rownames(resultado[[as.character(n)]]) <- significancias 
+   rownames(resultado[[as.character(n)]]) <- paste0(100*significancias, "%")
+   colnames(resultado[[as.character(n)]]) <- c("Tipo I", "Tipo II") 
    for(a in 1:length(significancias)){
       alpha = significancias[a]
       resultado[[as.character(n)]][a,] <- rowMeans(replicate(1000, cobertura(n, alpha)))
@@ -61,8 +62,9 @@ for(n in tamanhos){
 
 ## Resultado 
 
-```{r}
-#knitr::kable(resultado)
-resultado
-
+```{r, results='asis'}
+for(tam in tamanhos){
+   cat("\n## Amostra n = ", tam, "\n\n")
+   cat(knitr::kable(100*resultado[[as.character(tam)]], "latex"), "\n\n")
+}
 ```
