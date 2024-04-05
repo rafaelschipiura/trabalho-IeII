@@ -25,9 +25,7 @@ knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 60), tidy = TRUE)
 ```{r}
 main <- function(){
    tamanhos_m <- 3 * 10 ^ c(0:3)
-   #tamanhos_m <- 30
    significancias_m <- c(0.2, 0.1, 0.05, 0.01, 0.001)
-   #significancias_m <- 0.05
    delta_m <- 0.01
    
    resul_amostras <- vector("list",length(tamanhos_m))
@@ -58,7 +56,7 @@ IC <- function(amostra_i, sig_i){
 
 erros <- function(mu_e, intervalo, delta){
    errado.tipoI <- !(intervalo[1] < mu_e & mu_e < intervalo[2])
-   errado.tipoII <- (abs(mu_e) > delta) & ((intervalo[1] < 0) | (intervalo[2] > 0))
+   errado.tipoII <- !((abs(mu_e) > delta) & ((intervalo[1] > 0) | (intervalo[2] < 0)))
    return(c(errado.tipoI, errado.tipoII))
 }
 
@@ -108,6 +106,8 @@ simula_n <- function(n_n, sig_n, delta_n){
 	   D3[,,i] <- varia_n(n_n, sig_n, delta_n)
    }
    result <- apply(D3, MARGIN=c(1,2), FUN=mean)
+   colnames(result) <- c("Tipo I", "Tipo II")
+   rownames(result) <- paste0("n = ", n_n)
    return(result)
 }
 
@@ -117,6 +117,8 @@ simula_s <- function(n_s, sig_s, delta_s){
 	   D3[,,i] <- varia_s(n_s, sig_s, delta_s)
    }
    result <- apply(D3, MARGIN=c(1,2), FUN=mean)
+   colnames(result) <- c("Tipo I", "Tipo II")
+   rownames(result) <- paste0(100*sig_s, "%") 
    return(result)
 }
 ```
