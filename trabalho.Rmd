@@ -58,6 +58,6 @@ colnames(resultado) <- c("n", "Erro Tipo I", "Erro Tipo II")
 ## Resultado 
 
 ```{r}
-resultado
+knitr::kable(resultado)
 
 ```
