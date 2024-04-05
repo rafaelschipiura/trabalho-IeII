@@ -23,22 +23,93 @@ knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 60), tidy = TRUE)
 ## Parâmetros 
 
 ```{r}
-tamanhos <- 3 * 10 ^ c(0:3)
-significancias <- c(0.2, 0.1, 0.05, 0.01, 0.001)
-delta <- 0.2
+main <- function(){
+   tamanhos_m <- 3 * 10 ^ c(0:3)
+   significancias_m <- c(0.2, 0.1, 0.05, 0.01, 0.001)
+   delta_m <- 0.2
+   #exibe(simula(tamanhos_m, significancias_m, delta_m), tamanhos_m)
+   #knitr::kable(varia_n(tamanhos_m, significancias_m[1], delta_m))
+   
+   resul_amostras <- vector("list",length(tamanhos_m))
+   names(resul_amostras) <- tamanhos_m
+   for(n in 1:length(tamanhos_m)){
+      resul_amostras[[n]] <- varia_s(tamanhos_m[n], significancias_m, delta_m)
+   }
+   slides(resul_amostras, "n =")
+   
+   resul_signif <- vector("list",length(significancias_m))
+   names(resul_signif) <- significancias_m
+   for(s in 1:length(significancias_m)){
+      resul_signif[[s]] <- varia_n(tamanhos_m, significancias_m[s], delta_m)
+   }
+   slides(resul_signif, "alpha =")
+
+}
 
 ```
 
 ## Função Simulação
 
 ```{r}
-cobertura <- function(n_c, sig){
-   mu_c <- rnorm(1) 
+cobertura <- function(n_c, sig, delta_c){
+   mu_c <- runif(1, -1, 1) 
    amostra_c <- rnorm(n_c, mean=mu_c)
    IC_t.test <- t.test(amostra_c, conf.level=(1-sig))$conf.int
    errado.tipoI <- IC_t.test[1] > mu_c | mu_c > IC_t.test[2]
-   errado.tipoII <- abs(mu_c) > delta & IC_t.test[1] < 0 & 0 < IC_t.test[2] 
+   errado.tipoII <- abs(mu_c) > delta_c & IC_t.test[1] < 0 & 0 < IC_t.test[2] 
    return(c(errado.tipoI, errado.tipoII))
+}
+```
+
+## Função Simulação
+
+```{r}
+IC <- function(amostra_i, sig_i){
+   return(t.test(amostra_i, conf.level=(1-sig_i))$conf.int)
+}
+
+erros <- function(mu_e, intervalo, delta){
+   errado.tipoI <- intervalo[1] > mu_e | mu_e > intervalo[2]
+   errado.tipoII <- abs(mu_e) > delta & intervalo[1] < 0 & 0 < intervalo[2] 
+   return(c(errado.tipoI, errado.tipoII))
+}
+
+```
+
+## Função varia_n
+
+```{r}
+
+varia_n <- function(n_n, sig_n, delta_n){
+   mu_n <- runif(1, -1, 1) 
+   amostra_n <- rnorm(max(n_n), mean=mu_n)
+
+   resultado <- matrix(nrow=length(n_n), ncol=2) 
+   rownames(resultado) <- paste0("n = ", n_n)
+   colnames(resultado) <- c("Tipo I", "Tipo II") 
+   for(n_j in 1:length(n_n)){
+      resultado[n_j,] <- rowMeans(replicate(1000, erros(mu_n, IC( sample(amostra_n, n_n[n_j]), sig_n), delta_n)))
+   }
+   return(resultado)
+}
+
+```
+
+## Função varia_s
+
+```{r}
+
+varia_s <- function(n_s, sig_s, delta_s){
+   mu_s <- runif(1, -1, 1) 
+   amostra_s <- rnorm(n_s, mean=mu_s)
+
+   resultado <- matrix(nrow=length(sig_s), ncol=2) 
+   rownames(resultado) <- paste0(100*sig_s, "%")
+   colnames(resultado) <- c("Tipo I", "Tipo II") 
+   for(s_j in 1:length(sig_s)){
+      resultado[s_j,] <- rowMeans(replicate(1000, erros(mu_s, IC(amostra_s, sig_s[s_j]), delta_s)))
+   }
+   return(resultado)
 }
 
 ```
@@ -46,25 +117,39 @@ cobertura <- function(n_c, sig){
 ## Simulação
 
 ```{r}
-resultado <- vector("list", length(tamanhos)) 
-names(resultado) <- tamanhos
-for(n in tamanhos){
-   resultado[[as.character(n)]] <- matrix(nrow=length(significancias), ncol=2) 
-   rownames(resultado[[as.character(n)]]) <- paste0(100*significancias, "%")
-   colnames(resultado[[as.character(n)]]) <- c("Tipo I", "Tipo II") 
-   for(a in 1:length(significancias)){
-      alpha = significancias[a]
-      resultado[[as.character(n)]][a,] <- rowMeans(replicate(1000, cobertura(n, alpha)))
+simula <- function(tamanhos, significancias, delta){
+   resultado <- vector("list", length(tamanhos)) 
+   names(resultado) <- tamanhos
+   for(n in tamanhos){
+      resultado[[as.character(n)]] <- matrix(nrow=length(significancias), ncol=2) 
+      rownames(resultado[[as.character(n)]]) <- paste0(100*significancias, "%")
+      colnames(resultado[[as.character(n)]]) <- c("Tipo I", "Tipo II") 
+      for(a in 1:length(significancias)){
+         alpha = significancias[a]
+         resultado[[as.character(n)]][a,] <- rowMeans(replicate(1000, cobertura(n, alpha, delta)))
+      }
    }
+   return(resultado)
 }
-
 ```
+
 
 ## Resultado 
 
 ```{r, results='asis'}
-for(tam in tamanhos){
-   cat("\n## Amostra n = ", tam, "\n\n")
-   cat(knitr::kable(100*resultado[[as.character(tam)]], "latex"), "\n\n")
+exibe <- function(resultado, tamanhos){
+   for(tam in tamanhos){
+      cat("\n## Amostra n = ", tam, "\n\n")
+      cat(knitr::kable(100*resultado[[as.character(tam)]], "latex"), "\n\n")
+   }
 }
+
+slides <- function(lista, titulo){
+   for(l in names(lista)){
+      cat("\n## ", titulo, " ", l, "\n\n")
+      cat(knitr::kable(lista[[l]], "latex"), "\n\n")
+   }
+}
+
+main()
 ```
