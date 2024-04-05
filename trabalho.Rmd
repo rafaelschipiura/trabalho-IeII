@@ -25,36 +25,40 @@ knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 60), tidy = TRUE)
 ```{r}
 main <- function(){
    tamanhos_m <- 3 * 10 ^ c(0:3)
+   #tamanhos_m <- 30
    significancias_m <- c(0.2, 0.1, 0.05, 0.01, 0.001)
-   delta_m <- 0.2
+   #significancias_m <- 0.05
+   delta_m <- 0.01
    
    resul_amostras <- vector("list",length(tamanhos_m))
    names(resul_amostras) <- tamanhos_m
    for(n in 1:length(tamanhos_m)){
-      resul_amostras[[n]] <- varia_s(tamanhos_m[n], significancias_m, delta_m)
+      resul_amostras[[n]] <- simula_s(tamanhos_m[n], significancias_m, delta_m)
    }
    slides(resul_amostras, "n =")
    
    resul_signif <- vector("list",length(significancias_m))
    names(resul_signif) <- significancias_m
    for(s in 1:length(significancias_m)){
-      resul_signif[[s]] <- varia_n(tamanhos_m, significancias_m[s], delta_m)
+      resul_signif[[s]] <- simula_n(tamanhos_m, significancias_m[s], delta_m)
    }
    slides(resul_signif, "alpha =")
 
 }
 
 ```
+
 ## Função Simulação
 
 ```{r}
 IC <- function(amostra_i, sig_i){
-   return(t.test(amostra_i, conf.level=(1-sig_i))$conf.int)
+   ic <- t.test(amostra_i, conf.level=(1-sig_i))$conf.int
+   return(ic)
 }
 
 erros <- function(mu_e, intervalo, delta){
-   errado.tipoI <- intervalo[1] > mu_e | mu_e > intervalo[2]
-   errado.tipoII <- abs(mu_e) > delta & intervalo[1] < 0 & 0 < intervalo[2] 
+   errado.tipoI <- !(intervalo[1] < mu_e & mu_e < intervalo[2])
+   errado.tipoII <- (abs(mu_e) > delta) & ((intervalo[1] < 0) | (intervalo[2] > 0))
    return(c(errado.tipoI, errado.tipoII))
 }
 
@@ -69,10 +73,9 @@ varia_n <- function(n_n, sig_n, delta_n){
    amostra_n <- rnorm(max(n_n), mean=mu_n)
 
    resultado <- matrix(nrow=length(n_n), ncol=2) 
-   rownames(resultado) <- paste0("n = ", n_n)
-   colnames(resultado) <- c("Tipo I", "Tipo II") 
    for(n_j in 1:length(n_n)){
-      resultado[n_j,] <- rowMeans(replicate(1000, erros(mu_n, IC( sample(amostra_n, n_n[n_j]), sig_n), delta_n)))
+      resultado[n_j,] <- erros(mu_n, IC( sample(amostra_n, n_n[n_j]), sig_n), delta_n)
+
    }
    return(resultado)
 }
@@ -88,16 +91,35 @@ varia_s <- function(n_s, sig_s, delta_s){
    amostra_s <- rnorm(n_s, mean=mu_s)
 
    resultado <- matrix(nrow=length(sig_s), ncol=2) 
-   rownames(resultado) <- paste0(100*sig_s, "%")
-   colnames(resultado) <- c("Tipo I", "Tipo II") 
    for(s_j in 1:length(sig_s)){
-      resultado[s_j,] <- rowMeans(replicate(1000, erros(mu_s, IC(amostra_s, sig_s[s_j]), delta_s)))
+      resultado[s_j,] <- erros(mu_s, IC(amostra_s, sig_s[s_j]), delta_s)
    }
    return(resultado)
 }
 
 ```
 
+## Distribuição amostral
+
+```{r}
+simula_n <- function(n_n, sig_n, delta_n){
+   D3 <- array(dim=c(length(n_n), 2, 1000))
+   for(i in 1:1000){
+	   D3[,,i] <- varia_n(n_n, sig_n, delta_n)
+   }
+   result <- apply(D3, MARGIN=c(1,2), FUN=mean)
+   return(result)
+}
+
+simula_s <- function(n_s, sig_s, delta_s){
+   D3 <- array(dim=c(length(sig_s), 2, 1000))
+   for(i in 1:1000){
+	   D3[,,i] <- varia_s(n_s, sig_s, delta_s)
+   }
+   result <- apply(D3, MARGIN=c(1,2), FUN=mean)
+   return(result)
+}
+```
 
 ## Resultado 
 
