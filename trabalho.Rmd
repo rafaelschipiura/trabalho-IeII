@@ -25,7 +25,7 @@ knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 60), tidy = TRUE)
 ```{r}
 n <- 30 
 alpha <- 0.05
-delta <- 0.1
+delta <- 0.2
 
 ```
 
@@ -37,7 +37,7 @@ cobertura <- function(n_c){
    amostra_c <- rnorm(n_c, mean=mu_c)
    IC_t.test <- t.test(amostra_c)$conf.int
    errado.tipoI <- IC_t.test[1] > mu_c | mu_c > IC_t.test[2]
-   errado.tipoII <- abs(mu_c) > delta & IC_t.test[1] < mu_c & mu_c < IC_t.test[2] 
+   errado.tipoII <- abs(mu_c) > delta & IC_t.test[1] < 0 & 0 < IC_t.test[2] 
    return(c(errado.tipoI, errado.tipoII))
 }
 
