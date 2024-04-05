@@ -24,7 +24,6 @@ knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 60), tidy = TRUE)
 
 ```{r}
 n <- 30 
-mu <- rnorm(1) 
 alpha <- 0.05
 delta <- 0.1
 
@@ -33,11 +32,13 @@ delta <- 0.1
 ## Função Simulação
 
 ```{r}
-cobertura <- function(n_c, mu_c){
+cobertura <- function(n_c){
+   mu_c <- rnorm(1) 
    amostra_c <- rnorm(n_c, mean=mu_c)
    IC_t.test <- t.test(amostra_c)$conf.int
    errado.tipoI <- IC_t.test[1] > mu_c | mu_c > IC_t.test[2]
-   return(errado.tipoI)
+   errado.tipoII <- abs(mu_c) > delta & IC_t.test[1] < mu_c & mu_c < IC_t.test[2] 
+   return(c(errado.tipoI, errado.tipoII))
 }
 
 ```
@@ -45,8 +46,8 @@ cobertura <- function(n_c, mu_c){
 ## Simulação
 
 ```{r}
-resultado <- data.frame(ErroTipoI=paste0(100*mean(replicate(1000, cobertura(n, mu))) , "%"))
-rownames(resultado) <- c("Erro Tipo I")
+resultado <- data.frame(Erros=paste0(100*rowMeans(replicate(1000, cobertura(n))) , "%"))
+rownames(resultado) <- c("Erro Tipo I", "Erro Tipo II")
 
 ```
 
