@@ -23,7 +23,7 @@ knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 60), tidy = TRUE)
 ## Parâmetros 
 
 ```{r}
-n <- 30 
+tamanhos <- 3 * 10 ^ c(0:3)
 alpha <- 0.05
 delta <- 0.2
 
@@ -46,14 +46,18 @@ cobertura <- function(n_c){
 ## Simulação
 
 ```{r}
-resultado <- data.frame(Erros=paste0(100*rowMeans(replicate(1000, cobertura(n))) , "%"))
-rownames(resultado) <- c("Erro Tipo I", "Erro Tipo II")
+resultado <- matrix(nrow=length(tamanhos), ncol=3)
+for(n in 1:length(tamanhos)){ 
+resultado[n,1] = tamanhos[n]
+resultado[n, 2:3] <- paste0(100*rowMeans(replicate(1000, cobertura(tamanhos[n]))), "%")
+}
+colnames(resultado) <- c("n", "Erro Tipo I", "Erro Tipo II")
 
 ```
 
 ## Resultado 
 
 ```{r}
-knitr::kable(resultado)
+resultado
 
 ```
