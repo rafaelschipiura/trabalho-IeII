@@ -38,7 +38,7 @@ main <- function(){
 ```{r}
 trabalho <- function(tamanhos_m, significancias_m, distro_m){
    simulacoes <- 300
-   pontos <- 20
+   pontos <- 10
    resul_amostras <- vector("list",length(tamanhos_m))
    for(n in 1:length(tamanhos_m)){
       resul_amostras[[n]] <- simula_s(tamanhos_m[n], significancias_m, distro=distro_m, pontos_s=pontos, sim_amos=simulacoes)
