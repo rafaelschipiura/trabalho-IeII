@@ -95,9 +95,9 @@ varia_n <- function(n_n, sig_n, tipoII=FALSE, distro_n, param_n = 20, pontos){
    amostra_m <- amostra(max(n_n), distro=distro_n, param1=param_n + 0.5 * tipoII, param2=3)
 
    n10 <- floor(seq(from=min(n_n), to=max(n_n), length.out=pontos))
-   resultado <- matrix(FALSE, nrow=pontos, ncol=1) 
+   resultado <- logical(length=pontos) 
    for(n_j in 1:pontos){
-      resultado[n_j, 1] <- teste( sample(amostra_n, n10[n_j]), sample(amostra_m, n10[n_j]), sig_n)
+      resultado[n_j] <- teste( sample(amostra_n, n10[n_j]), sample(amostra_m, n10[n_j]), sig_n)
 
    }
    return(resultado)
@@ -114,9 +114,9 @@ varia_s <- function(n_s, sig_s, tipoII=FALSE, distro_s, param_s = 20, pontos){
    amostra_r <- amostra(n_s, distro=distro_s, param1=param_s + 0.5 * tipoII, param2=3)
 
    s10 <- seq(from=min(sig_s), to=max(sig_s), length.out=pontos)
-   resultado <- matrix(FALSE, nrow=pontos, ncol=1) 
+   resultado <- logical(length=pontos) 
    for(s_j in 1:pontos){
-      resultado[s_j, 1] <- teste(amostra_s, amostra_r, s10[s_j])
+      resultado[s_j] <- teste(amostra_s, amostra_r, s10[s_j])
    }
    return(resultado)
 }
