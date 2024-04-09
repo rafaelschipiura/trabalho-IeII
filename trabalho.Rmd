@@ -3,7 +3,7 @@ title: Trabalho de Estatística Computacional sobre erros Tipo I e Tipo II
 author:    
    - Rafael Alisson Schipiura    
    - Matheus Born Cabús 
-date: 4 de Abril de 2024    
+date: 9 de Abril de 2024    
 fontsize: 8pt    
 output:    
    beamer_presentation:    
@@ -25,41 +25,31 @@ knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 60), tidy = TRUE)
 ```{r}
 main <- function(){
    tamanhos_m <- 3 * 10 ^ c(0:3)
-   #tamanhos_m <- 30
    significancias_m <- c(0.2, 0.1, 0.05, 0.01, 0.001)
-   #significancias_m <- 0.05
-   delta_m <- 0.01
    
    resul_amostras <- vector("list",length(tamanhos_m))
-   names(resul_amostras) <- tamanhos_m
    for(n in 1:length(tamanhos_m)){
-      resul_amostras[[n]] <- simula_s(tamanhos_m[n], significancias_m, delta_m)
+      resul_amostras[[n]] <- simula_s(tamanhos_m[n], significancias_m)
    }
+   names(resul_amostras) <- tamanhos_m
    slides(resul_amostras, "n =")
    
    resul_signif <- vector("list",length(significancias_m))
-   names(resul_signif) <- significancias_m
    for(s in 1:length(significancias_m)){
-      resul_signif[[s]] <- simula_n(tamanhos_m, significancias_m[s], delta_m)
+      resul_signif[[s]] <- simula_n(tamanhos_m, significancias_m[s])
    }
+   names(resul_signif) <- significancias_m
    slides(resul_signif, "alpha =")
 
 }
 
 ```
 
-## Função Simulação
+## Função Teste 
 
 ```{r}
-IC <- function(amostra_i, sig_i){
-   ic <- t.test(amostra_i, conf.level=(1-sig_i))$conf.int
-   return(ic)
-}
-
-erros <- function(mu_e, intervalo, delta){
-   errado.tipoI <- !(intervalo[1] < mu_e & mu_e < intervalo[2])
-   errado.tipoII <- (abs(mu_e) > delta) & ((intervalo[1] < 0) | (intervalo[2] > 0))
-   return(c(errado.tipoI, errado.tipoII))
+teste <- function(amostra_i, amostra_j, sig_i = 0.05){
+   return((t.test(amostra_i, amostra_j))$p.value < sig_i)
 }
 
 ```
@@ -68,13 +58,14 @@ erros <- function(mu_e, intervalo, delta){
 
 ```{r}
 
-varia_n <- function(n_n, sig_n, delta_n){
-   mu_n <- runif(1, -1, 1) 
-   amostra_n <- rnorm(max(n_n), mean=mu_n)
+varia_n <- function(n_n, sig_n, tipoII=FALSE, mu_n = 20){
+   
+   amostra_n <- rnorm(max(n_n), mean=mu_n, sd=2)
+   amostra_m <- rnorm(max(n_n), mean=mu_n + 0.5 * tipoII, sd=3)
 
-   resultado <- matrix(nrow=length(n_n), ncol=2) 
+   resultado <- logical(length(n_n)) 
    for(n_j in 1:length(n_n)){
-      resultado[n_j,] <- erros(mu_n, IC( sample(amostra_n, n_n[n_j]), sig_n), delta_n)
+      resultado[n_j] <- teste( sample(amostra_n, n_n[n_j]), sample(amostra_m, n_n[n_j]), sig_n)
 
    }
    return(resultado)
@@ -86,13 +77,14 @@ varia_n <- function(n_n, sig_n, delta_n){
 
 ```{r}
 
-varia_s <- function(n_s, sig_s, delta_s){
-   mu_s <- runif(1, -1, 1) 
-   amostra_s <- rnorm(n_s, mean=mu_s)
+varia_s <- function(n_s, sig_s, tipoII=FALSE, mu_s = 20){
 
-   resultado <- matrix(nrow=length(sig_s), ncol=2) 
+   amostra_s <- rnorm(n_s, mean=mu_s, sd=2)
+   amostra_r <- rnorm(n_s, mean=mu_s + 0.5 * tipoII, sd=3)
+
+   resultado <- logical(length(sig_s)) 
    for(s_j in 1:length(sig_s)){
-      resultado[s_j,] <- erros(mu_s, IC(amostra_s, sig_s[s_j]), delta_s)
+      resultado[s_j] <- teste(amostra_s, amostra_r, sig_s[s_j])
    }
    return(resultado)
 }
@@ -102,21 +94,27 @@ varia_s <- function(n_s, sig_s, delta_s){
 ## Distribuição amostral
 
 ```{r}
-simula_n <- function(n_n, sig_n, delta_n){
+simula_n <- function(n_n, sig_n){
    D3 <- array(dim=c(length(n_n), 2, 1000))
    for(i in 1:1000){
-	   D3[,,i] <- varia_n(n_n, sig_n, delta_n)
+	   D3[,1,i] <- varia_n(n_n, sig_n, tipoII=FALSE)
+	   D3[,2,i] <- !(varia_n(n_n, sig_n, tipoII=TRUE))
    }
    result <- apply(D3, MARGIN=c(1,2), FUN=mean)
+   rownames(result) <- paste0("n = ", n_n)
+   colnames(result) <- c("Tipo I", "Tipo II")
    return(result)
 }
 
-simula_s <- function(n_s, sig_s, delta_s){
+simula_s <- function(n_s, sig_s){
    D3 <- array(dim=c(length(sig_s), 2, 1000))
    for(i in 1:1000){
-	   D3[,,i] <- varia_s(n_s, sig_s, delta_s)
+	   D3[,1,i] <- varia_s(n_s, sig_s, tipoII=FALSE)
+	   D3[,2,i] <- !(varia_s(n_s, sig_s, tipoII=TRUE))
    }
    result <- apply(D3, MARGIN=c(1,2), FUN=mean)
+   rownames(result) <- paste0("alpha = ", sig_s)
+   colnames(result) <- c("Tipo I", "Tipo II")
    return(result)
 }
 ```
