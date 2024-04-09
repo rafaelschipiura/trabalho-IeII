@@ -24,28 +24,35 @@ knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 60), tidy = TRUE)
 
 ```{r}
 main <- function(){
-   tamanhos_m <- 3 * 10 ^ c(0:3)
-   significancias_m <- c(0.2, 0.1, 0.05, 0.01, 0.001)
-   
+   tamanhos <- 3 * 10 ^ c(0:3)
+   significancias <- c(0.2, 0.1, 0.05, 0.01, 0.001)
+   distribuicoes <- c('Normal', 'Poisson', 'Gamma')
+   for (d in distribuicoes){
+   trabalho(tamanhos, significancias, d)
+   }
+}
+
+trabalho <- function(tamanhos_m, significancias_m, distro_m){
+
    resul_amostras <- vector("list",length(tamanhos_m))
    for(n in 1:length(tamanhos_m)){
-      resul_amostras[[n]] <- simula_s(tamanhos_m[n], significancias_m)
+      resul_amostras[[n]] <- simula_s(tamanhos_m[n], significancias_m, distro=distro_m)
    }
    names(resul_amostras) <- tamanhos_m
-   slides(resul_amostras, "n =")
+   slides(resul_amostras, paste0("Distribuição ", distro_m, ", n ="))
    
    resul_signif <- vector("list",length(significancias_m))
    for(s in 1:length(significancias_m)){
-      resul_signif[[s]] <- simula_n(tamanhos_m, significancias_m[s])
+      resul_signif[[s]] <- simula_n(tamanhos_m, significancias_m[s], distro=distro_m)
    }
    names(resul_signif) <- significancias_m
-   slides(resul_signif, "alpha =")
+   slides(resul_signif, paste0("Distribuição ", distro_m, ", $\\alpha$ ="))
 
 }
 
 ```
 
-## Função Teste 
+## Teste 
 
 ```{r}
 teste <- function(amostra_i, amostra_j, sig_i = 0.05){
@@ -54,14 +61,31 @@ teste <- function(amostra_i, amostra_j, sig_i = 0.05){
 
 ```
 
-## Função varia_n
+## Sorteio da amostra 
 
 ```{r}
 
-varia_n <- function(n_n, sig_n, tipoII=FALSE, mu_n = 20){
+amostra <- function(n_a, distro, param1, param2){
    
-   amostra_n <- rnorm(max(n_n), mean=mu_n, sd=2)
-   amostra_m <- rnorm(max(n_n), mean=mu_n + 0.5 * tipoII, sd=3)
+   if       (distro == 'Normal'){
+      return(rnorm(n_a, mean=param1, sd=param2))
+   } else if(distro == 'Poisson'){
+      return(rpois(n_a, lambda=param1))
+   } else if(distro == 'Gamma'){
+      return(rgamma(n_a, shape=param1/param2, scale=param2))
+   }
+}
+
+```
+
+## Vária tamnho da amostra, significância fixa
+
+```{r}
+
+varia_n <- function(n_n, sig_n, tipoII=FALSE, distro_n, param_n = 20){
+   
+   amostra_n <- amostra(max(n_n), distro=distro_n, param1=param_n, param2=2)
+   amostra_m <- amostra(max(n_n), distro=distro_n, param1=param_n + 0.5 * tipoII, param2=3)
 
    resultado <- logical(length(n_n)) 
    for(n_j in 1:length(n_n)){
@@ -73,14 +97,14 @@ varia_n <- function(n_n, sig_n, tipoII=FALSE, mu_n = 20){
 
 ```
 
-## Função varia_s
+## Várias significâncias, n fixo
 
 ```{r}
 
-varia_s <- function(n_s, sig_s, tipoII=FALSE, mu_s = 20){
+varia_s <- function(n_s, sig_s, tipoII=FALSE, distro_s, param_s = 20){
 
-   amostra_s <- rnorm(n_s, mean=mu_s, sd=2)
-   amostra_r <- rnorm(n_s, mean=mu_s + 0.5 * tipoII, sd=3)
+   amostra_s <- amostra(n_s, distro=distro_s, param1=param_s, param2=2)
+   amostra_r <- amostra(n_s, distro=distro_s, param1=param_s + 0.5 * tipoII, param2=3)
 
    resultado <- logical(length(sig_s)) 
    for(s_j in 1:length(sig_s)){
@@ -91,14 +115,14 @@ varia_s <- function(n_s, sig_s, tipoII=FALSE, mu_s = 20){
 
 ```
 
-## Distribuição amostral
+## Simulação amostral
 
 ```{r}
-simula_n <- function(n_n, sig_n){
+simula_n <- function(n_n, sig_n, distro){
    D3 <- array(dim=c(length(n_n), 2, 1000))
    for(i in 1:1000){
-	   D3[,1,i] <- varia_n(n_n, sig_n, tipoII=FALSE)
-	   D3[,2,i] <- !(varia_n(n_n, sig_n, tipoII=TRUE))
+	   D3[,1,i] <- varia_n(n_n, sig_n, tipoII=FALSE, distro_n=distro)
+	   D3[,2,i] <- !(varia_n(n_n, sig_n, tipoII=TRUE, distro_n=distro))
    }
    result <- apply(D3, MARGIN=c(1,2), FUN=mean)
    colnames(result) <- c("Tipo I", "Tipo II")
@@ -106,11 +130,11 @@ simula_n <- function(n_n, sig_n){
    return(result)
 }
 
-simula_s <- function(n_s, sig_s){
+simula_s <- function(n_s, sig_s, distro){
    D3 <- array(dim=c(length(sig_s), 2, 1000))
    for(i in 1:1000){
-	   D3[,1,i] <- varia_s(n_s, sig_s, tipoII=FALSE)
-	   D3[,2,i] <- !(varia_s(n_s, sig_s, tipoII=TRUE))
+	   D3[,1,i] <- varia_s(n_s, sig_s, tipoII=FALSE, distro_s=distro)
+	   D3[,2,i] <- !(varia_s(n_s, sig_s, tipoII=TRUE, distro_s=distro))
    }
    result <- apply(D3, MARGIN=c(1,2), FUN=mean)
    rownames(result) <- paste0("alpha = ", sig_s)
