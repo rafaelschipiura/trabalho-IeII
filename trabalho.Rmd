@@ -24,7 +24,7 @@ knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 60), tidy = TRUE)
 
 ```{r}
 main <- function(){
-   tamanhos <- floor(seq(from=2, to=3000, length.out=4))
+   tamanhos <- 3 * 10 ^ c(0:3)
    significancias <- c(0.1, 0.05, 0.01)
    distribuicoes <- c('Normal', 'Poisson', 'Gamma')
    for (d in distribuicoes){
@@ -37,17 +37,17 @@ main <- function(){
 
 ```{r}
 trabalho <- function(tamanhos_m, significancias_m, distro_m){
-
+   pontos <- 20
    resul_amostras <- vector("list",length(tamanhos_m))
    for(n in 1:length(tamanhos_m)){
-      resul_amostras[[n]] <- simula_s(tamanhos_m[n], significancias_m, distro=distro_m)
+      resul_amostras[[n]] <- simula_s(tamanhos_m[n], significancias_m, distro=distro_m, pontos_s=pontos)
    }
    names(resul_amostras) <- tamanhos_m
    slides(resul_amostras, paste0("Distribuição ", distro_m, ", n ="))
    
    resul_signif <- vector("list",length(significancias_m))
    for(s in 1:length(significancias_m)){
-      resul_signif[[s]] <- simula_n(tamanhos_m, significancias_m[s], distro=distro_m)
+      resul_signif[[s]] <- simula_n(tamanhos_m, significancias_m[s], distro=distro_m, pontos_n=pontos)
    }
    names(resul_signif) <- significancias_m
    slides(resul_signif, paste0("Distribuição ", distro_m, ", $\\alpha$ ="))
@@ -86,14 +86,15 @@ amostra <- function(n_a, distro, param1, param2){
 
 ```{r}
 
-varia_n <- function(n_n, sig_n, tipoII=FALSE, distro_n, param_n = 20){
+varia_n <- function(n_n, sig_n, tipoII=FALSE, distro_n, param_n = 20, pontos){
    
    amostra_n <- amostra(max(n_n), distro=distro_n, param1=param_n, param2=2)
    amostra_m <- amostra(max(n_n), distro=distro_n, param1=param_n + 0.5 * tipoII, param2=3)
 
-   resultado <- logical(length(n_n)) 
-   for(n_j in 1:length(n_n)){
-      resultado[n_j] <- teste( sample(amostra_n, n_n[n_j]), sample(amostra_m, n_n[n_j]), sig_n)
+   n10 <- floor(seq(from=min(n_n), to=max(n_n), length.out=pontos))
+   resultado <- matrix(FALSE, nrow=pontos, ncol=1) 
+   for(n_j in 1:pontos){
+      resultado[n_j, 1] <- teste( sample(amostra_n, n10[n_j]), sample(amostra_m, n10[n_j]), sig_n)
 
    }
    return(resultado)
@@ -105,13 +106,14 @@ varia_n <- function(n_n, sig_n, tipoII=FALSE, distro_n, param_n = 20){
 
 ```{r}
 
-varia_s <- function(n_s, sig_s, tipoII=FALSE, distro_s, param_s = 20){
+varia_s <- function(n_s, sig_s, tipoII=FALSE, distro_s, param_s = 20, pontos){
    amostra_s <- amostra(n_s, distro=distro_s, param1=param_s, param2=2)
    amostra_r <- amostra(n_s, distro=distro_s, param1=param_s + 0.5 * tipoII, param2=3)
 
-   resultado <- logical(length(sig_s)) 
-   for(s_j in 1:length(sig_s)){
-      resultado[s_j] <- teste(amostra_s, amostra_r, sig_s[s_j])
+   s10 <- seq(from=min(sig_s), to=max(sig_s), length.out=pontos)
+   resultado <- matrix(FALSE, nrow=pontos, ncol=1) 
+   for(s_j in 1:pontos){
+      resultado[s_j, 1] <- teste(amostra_s, amostra_r, s10[s_j])
    }
    return(resultado)
 }
@@ -121,27 +123,25 @@ varia_s <- function(n_s, sig_s, tipoII=FALSE, distro_s, param_s = 20){
 ## Simulação amostral
 
 ```{r}
-simula_n <- function(n_n, sig_n, distro){
-   D3 <- array(dim=c(length(n_n), 2, 1000))
+simula_n <- function(n_n, sig_n, distro, pontos_n){
+   D3 <- array(dim=c(pontos_n, 2, 1000))
    for(i in 1:1000){
-	   D3[,1,i] <- varia_n(n_n, sig_n, tipoII=FALSE, distro_n=distro)
-	   D3[,2,i] <- !(varia_n(n_n, sig_n, tipoII=TRUE, distro_n=distro))
+	   D3[,1,i] <- varia_n(n_n, sig_n, tipoII=FALSE, distro_n=distro, pontos=pontos_n)
+	   D3[,2,i] <- !(varia_n(n_n, sig_n, tipoII=TRUE, distro_n=distro, pontos=pontos_n))
    }
    result <- apply(D3, MARGIN=c(1,2), FUN=mean)
    colnames(result) <- c("Tipo I", "Tipo II")
-   rownames(result) <- paste0("n = ", n_n)
    return(result)
 }
 
-simula_s <- function(n_s, sig_s, distro){
-   D3 <- array(dim=c(length(sig_s), 2, 1000))
+simula_s <- function(n_s, sig_s, distro, pontos_s){
+   D3 <- array(dim=c(pontos_s, 2, 1000))
    for(i in 1:1000){
-	   D3[,1,i] <- varia_s(n_s, sig_s, tipoII=FALSE, distro_s=distro)
-	   D3[,2,i] <- !(varia_s(n_s, sig_s, tipoII=TRUE, distro_s=distro))
+	   D3[,1,i] <- varia_s(n_s, sig_s, tipoII=FALSE, distro_s=distro, pontos=pontos_s)
+	   D3[,2,i] <- !(varia_s(n_s, sig_s, tipoII=TRUE, distro_s=distro, pontos=pontos_s))
    }
    result <- apply(D3, MARGIN=c(1,2), FUN=mean)
    colnames(result) <- c("Tipo I", "Tipo II")
-   rownames(result) <- paste0("alpha = ", sig_s)
    return(result)
 }
 ```
@@ -152,7 +152,9 @@ simula_s <- function(n_s, sig_s, distro){
 slides <- function(lista, titulo){
    for(l in names(lista)){
       cat("\n## ", titulo, " ", l, "\n\n")
-      plot(lista[[l]])
+      #cat(knitr::kable(lista[[l]], "latex"), "\n\n")
+      plot(lista[[l]], type='l', xlim=c(0.001,0.122), ylim=c(0, 1))
+      abline(v=c(0.1, 0.05, 0.01))
       cat("\n\n")
    }
 }
