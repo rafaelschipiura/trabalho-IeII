@@ -24,14 +24,18 @@ knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 60), tidy = TRUE)
 
 ```{r}
 main <- function(){
-   tamanhos <- 3 * 10 ^ c(0:3)
-   significancias <- c(0.2, 0.1, 0.05, 0.01, 0.001)
+   tamanhos <- floor(seq(from=2, to=3000, length.out=4))
+   significancias <- c(0.1, 0.05, 0.01)
    distribuicoes <- c('Normal', 'Poisson', 'Gamma')
    for (d in distribuicoes){
    trabalho(tamanhos, significancias, d)
    }
 }
+```
 
+## Para cada distribuição:
+
+```{r}
 trabalho <- function(tamanhos_m, significancias_m, distro_m){
 
    resul_amostras <- vector("list",length(tamanhos_m))
@@ -78,7 +82,7 @@ amostra <- function(n_a, distro, param1, param2){
 
 ```
 
-## Vária tamnho da amostra, significância fixa
+## Varia tamanho da amostra, significância fixa
 
 ```{r}
 
@@ -102,7 +106,6 @@ varia_n <- function(n_n, sig_n, tipoII=FALSE, distro_n, param_n = 20){
 ```{r}
 
 varia_s <- function(n_s, sig_s, tipoII=FALSE, distro_s, param_s = 20){
-
    amostra_s <- amostra(n_s, distro=distro_s, param1=param_s, param2=2)
    amostra_r <- amostra(n_s, distro=distro_s, param1=param_s + 0.5 * tipoII, param2=3)
 
@@ -137,8 +140,8 @@ simula_s <- function(n_s, sig_s, distro){
 	   D3[,2,i] <- !(varia_s(n_s, sig_s, tipoII=TRUE, distro_s=distro))
    }
    result <- apply(D3, MARGIN=c(1,2), FUN=mean)
-   rownames(result) <- paste0("alpha = ", sig_s)
    colnames(result) <- c("Tipo I", "Tipo II")
+   rownames(result) <- paste0("alpha = ", sig_s)
    return(result)
 }
 ```
@@ -149,7 +152,8 @@ simula_s <- function(n_s, sig_s, distro){
 slides <- function(lista, titulo){
    for(l in names(lista)){
       cat("\n## ", titulo, " ", l, "\n\n")
-      cat(knitr::kable(lista[[l]], "latex"), "\n\n")
+      plot(lista[[l]])
+      cat("\n\n")
    }
 }
 
