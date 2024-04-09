@@ -26,7 +26,7 @@ knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 60), tidy = TRUE)
 main <- function(){
    tamanhos <- 3 * 10 ^ c(0:3)
    significancias <- c(0.1, 0.05, 0.01)
-   distribuicoes <- c('Normal', 'Poisson', 'Gamma', 'Exponencial')
+   distribuicoes <- c('Normal', 'Poisson')#, 'Gamma', 'Exponencial')
    for (d in distribuicoes){
    trabalho(tamanhos, significancias, d)
    }
@@ -37,17 +37,18 @@ main <- function(){
 
 ```{r}
 trabalho <- function(tamanhos_m, significancias_m, distro_m){
+   simulacoes <- 300
    pontos <- 20
    resul_amostras <- vector("list",length(tamanhos_m))
    for(n in 1:length(tamanhos_m)){
-      resul_amostras[[n]] <- simula_s(tamanhos_m[n], significancias_m, distro=distro_m, pontos_s=pontos)
+      resul_amostras[[n]] <- simula_s(tamanhos_m[n], significancias_m, distro=distro_m, pontos_s=pontos, sim_amos=simulacoes)
    }
    names(resul_amostras) <- tamanhos_m
    slides(resul_amostras, paste0("Distribuição ", distro_m, ", n ="))
    
    resul_signif <- vector("list",length(significancias_m))
    for(s in 1:length(significancias_m)){
-      resul_signif[[s]] <- simula_n(tamanhos_m, significancias_m[s], distro=distro_m, pontos_n=pontos)
+      resul_signif[[s]] <- simula_n(tamanhos_m, significancias_m[s], distro=distro_m, pontos_n=pontos, sim_amos=simulacoes)
    }
    names(resul_signif) <- significancias_m
    slides(resul_signif, paste0("Distribuição ", distro_m, ", $\\alpha$ ="))
@@ -125,9 +126,9 @@ varia_s <- function(n_s, sig_s, tipoII=FALSE, distro_s, param_s = 20, pontos){
 ## Simulação amostral
 
 ```{r}
-simula_n <- function(n_n, sig_n, distro, pontos_n){
-   D3 <- array(dim=c(pontos_n, 2, 1000))
-   for(i in 1:1000){
+simula_n <- function(n_n, sig_n, distro, pontos_n, sim_amos){
+   D3 <- array(dim=c(pontos_n, 2, sim_amos))
+   for(i in 1:sim_amos){
 	   D3[,1,i] <- varia_n(n_n, sig_n, tipoII=FALSE, distro_n=distro, pontos=pontos_n)
 	   D3[,2,i] <- !(varia_n(n_n, sig_n, tipoII=TRUE, distro_n=distro, pontos=pontos_n))
    }
@@ -136,9 +137,9 @@ simula_n <- function(n_n, sig_n, distro, pontos_n){
    return(result)
 }
 
-simula_s <- function(n_s, sig_s, distro, pontos_s){
-   D3 <- array(dim=c(pontos_s, 2, 1000))
-   for(i in 1:1000){
+simula_s <- function(n_s, sig_s, distro, pontos_s, sim_amos){
+   D3 <- array(dim=c(pontos_s, 2, sim_amos))
+   for(i in 1:sim_amos){
 	   D3[,1,i] <- varia_s(n_s, sig_s, tipoII=FALSE, distro_s=distro, pontos=pontos_s)
 	   D3[,2,i] <- !(varia_s(n_s, sig_s, tipoII=TRUE, distro_s=distro, pontos=pontos_s))
    }
