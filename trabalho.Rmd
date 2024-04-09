@@ -101,8 +101,8 @@ simula_n <- function(n_n, sig_n){
 	   D3[,2,i] <- !(varia_n(n_n, sig_n, tipoII=TRUE))
    }
    result <- apply(D3, MARGIN=c(1,2), FUN=mean)
-   rownames(result) <- paste0("n = ", n_n)
    colnames(result) <- c("Tipo I", "Tipo II")
+   rownames(result) <- paste0("n = ", n_n)
    return(result)
 }
 
