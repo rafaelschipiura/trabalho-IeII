@@ -17,7 +17,7 @@ RNGkind("Mersenne-Twister")
 RNGversion("4.1.2")
 set.seed(1752031105)
 library(formatR)
-knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 60), tidy = TRUE)
+knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 50), tidy = TRUE)
 ```
 
 ## Parâmetros 
@@ -85,9 +85,9 @@ amostra <- function(n_a, distro, param1, param2){
 
 ```
 
-## Varia tamanho da amostra, significância fixa
+## Sorteamos uma amostra e executamos os testes pra cada significância 
 
-```{r}
+```{r echo=FALSE}
 
 varia_n <- function(n_n, sig_n, tipoII=FALSE, distro_n, param_n = 20, pontos){
    
@@ -104,8 +104,6 @@ varia_n <- function(n_n, sig_n, tipoII=FALSE, distro_n, param_n = 20, pontos){
 }
 
 ```
-
-## Várias significâncias, n fixo
 
 ```{r}
 
@@ -125,7 +123,7 @@ varia_s <- function(n_s, sig_s, tipoII=FALSE, distro_s, param_s = 20, pontos){
 
 ## Simulação amostral
 
-```{r}
+```{r echo=FALSE}
 simula_n <- function(n_n, sig_n, distro, pontos_n, sim_amos){
    D3 <- array(dim=c(pontos_n, 2, sim_amos))
    for(i in 1:sim_amos){
@@ -136,6 +134,9 @@ simula_n <- function(n_n, sig_n, distro, pontos_n, sim_amos){
    colnames(result) <- c("Tipo I", "Tipo II")
    return(result)
 }
+```
+
+```{r}
 
 simula_s <- function(n_s, sig_s, distro, pontos_s, sim_amos){
    D3 <- array(dim=c(pontos_s, 2, sim_amos))
