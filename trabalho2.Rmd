@@ -22,9 +22,9 @@ options(digits=3)
 RNGkind("Mersenne-Twister")
 RNGversion("4.1.2")
 set.seed(1752031105)
-library(formatR, parallel)
+library(formatR, ggplot2, reshape2)
 knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 50), tidy = TRUE)
-knitr::opts_chunk$set(dev = 'pdf', fig.width=4, fig.height=4, fig.align='center')
+knitr::opts_chunk$set(dev = 'pdf', fig.width=6, fig.height=5, fig.align='center')
 ```
 ```{r, echo=FALSE}
 teste <- function(amostra1, amostra2, qual, sig){
@@ -57,9 +57,9 @@ f3 <- function(x){round(10^(x - 0.522879), digits=0)}
 ```
 ```{r, echo=FALSE, results='asis'}
 main <- function(){
-   simulacoes <- c('Trade-Off Beta')#, 'Curva do Poder do Teste')
-   distros <- c('Normal', 'Exponencial')#, 'Gamma', 'Poisson')
-   testes <- c('Teste t de Student', 'Teste de Wilcoxon')
+   simulacoes <- c('Trade-Off Beta', 'Curva do Poder do Teste')
+   distros <- c('Normal')#, 'Exponencial', 'Gamma')
+   testes <- c('Teste t de Student')#, 'Teste de Wilcoxon')
    ndeltas <- 10 
    deltas <- seq(from=-1.5, to=1.5, length.out=ndeltas)
    delta_fixo <- 0.1
@@ -68,11 +68,11 @@ main <- function(){
    seql <- 3 * 0:numalphas/numalphas + 1
    alphas <- f2(seql)
    alpha_fixo <- 0.05
-   h2 <- 1 
+   h2 <- 1
    numtam <- f1(h2)
    seqm <- 3 * 0:numtam/numtam + 1
    enes <- f3(seqm)
-   size <- 300 
+   size <- 3000 
 
    resultado <- vector('list', length(simulacoes))
    names(resultado) <- simulacoes
@@ -103,9 +103,15 @@ main <- function(){
 		    d3[n, p,] <- replicate(size, teste(amostra(enes[n], j, 0), amostra(enes[n], j, delta[p] ), k , alpha[p]))
 	       }
 	    }
-	    resultado[[i]][[j]][[k]] <- apply(d3, MARGIN=c(1,2), FUN=mean)
-	    #cat(knitr::kable(resultado[[i]][[j]][[k]], 'latex'))
-            heatmap(resultado[[i]][[j]][[k]], Colv = NA, Rowv = NA, scale="column")
+	    matriz <- apply(d3, MARGIN=c(1,2), FUN=mean)
+	    #cat(knitr::kable(matriz, 'latex'))
+            if (i == 'Trade-Off Beta'){
+	       plot <- melt(matriz)
+	       plot$n <- sprintf("%04d",plot$n)
+               print(ggplot(data=plot,aes(x=n, y=d)) + geom_tile(aes(fill = value), color = "white", lwd = 0.1, linetype = 1) + coord_fixed() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) + guides(fill = guide_colourbar(barwidth = 0.5, barheight = 20, title = "Poder")) + xlab("Tamanho da Amostra") + ylab("Significância") + geom_text(aes(label = sprintf('%.02f%%', 100*value)), color = "white", size = 4))
+	    } else {
+	    
+	    }
 	    cat("\n\n")
          }
       }
