@@ -1,0 +1,116 @@
+---
+title: Trabalho de Estatística Computacional sobre erros Tipo I e Tipo II    
+author:    
+   - Rafael Alisson Schipiura    
+   - Matheus Born Cabús 
+date: 9 de Abril de 2024    
+output:    
+   pdf_document:
+      latex_engine: xelatex
+---
+<!--
+   beamer_presentation:    
+      theme: "AnnArbor"
+      colortheme: "dolphin"
+      fonttheme: "structurebold"
+      slide_level: 3    
+      latex_engine: xelatex
+-->
+
+```{r, echo=FALSE}
+options(digits=3)
+RNGkind("Mersenne-Twister")
+RNGversion("4.1.2")
+set.seed(1752031105)
+library(formatR, parallel)
+knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 50), tidy = TRUE)
+knitr::opts_chunk$set(dev = 'pdf', fig.width=4, fig.height=4, fig.align='center')
+```
+```{r, echo=FALSE}
+teste <- function(amostra1, amostra2, qual, sig){
+	if(qual == 'Teste t de Student'){
+		teste <- t.test
+	} else {
+		teste <- wilcox.test
+	}
+	return(teste(amostra1, amostra2)$p.value < sig)
+}
+```
+```{r, echo=FALSE}
+amostra <- function(n, distro, delta){
+
+   if(distro == 'Poisson'){
+      return(rpois(n, lambda=20+delta))
+   } else if(distro == 'Gamma'){
+      return(rgamma(n, shape=(20+delta)/2, scale=2))
+   } else if(distro == 'Exponencial'){
+      return(rexp(n, rate=1/(20+delta)))
+   } else {
+      return(rnorm(n, mean=20+delta, sd=2))
+   }
+}
+```
+```{r, echo=FALSE}
+f1 <- function(x){4*x - 1.5 * x^2 + 0.5 * x^3}
+f2 <- function(x){-(0.02 + 2/300)*x + 0.0525*x^2 - (0.018 + 1/3000)*x^3 + 0.0025*x^4}
+f3 <- function(x){round(10^(x - 0.522879), digits=0)}
+```
+```{r, echo=FALSE, results='asis'}
+main <- function(){
+   simulacoes <- c('Trade-Off Beta')#, 'Curva do Poder do Teste')
+   distros <- c('Normal', 'Exponencial')#, 'Gamma', 'Poisson')
+   testes <- c('Teste t de Student', 'Teste de Wilcoxon')
+   ndeltas <- 10 
+   deltas <- seq(from=-1.5, to=1.5, length.out=ndeltas)
+   delta_fixo <- 0.1
+   h1 <- 1 
+   numalphas <- f1(h1)
+   seql <- 3 * 0:numalphas/numalphas + 1
+   alphas <- f2(seql)
+   alpha_fixo <- 0.05
+   h2 <- 1 
+   numtam <- f1(h2)
+   seqm <- 3 * 0:numtam/numtam + 1
+   enes <- f3(seqm)
+   size <- 300 
+
+   resultado <- vector('list', length(simulacoes))
+   names(resultado) <- simulacoes
+   for(i in names(resultado)){
+      cat("# ", i, "\n\n")
+      resultado[[i]] <- vector('list', length(distros))
+      names(resultado[[i]]) <- distros
+      for(j in names(resultado[[i]])){
+         cat("## Distribuição", j, "\n\n")
+         resultado[[i]][[j]] <- vector('list', length(testes))
+         names(resultado[[i]][[j]]) <- testes
+	 for(k in names(resultado[[i]][[j]])){
+	    cat("### ", k, "\n\n")
+            if (i == 'Trade-Off Beta'){
+	       primeira <- length(alphas)
+	       nomes <- paste0(round(alphas * 100, digits=2), "%")
+	       alpha <- alphas 
+	       delta <- rep(delta_fixo, primeira)
+            } else {
+               primeira <- ndeltas
+	       nomes <- paste("delta=", deltas)
+	       alpha <- rep(alpha_fixo, primeira)
+	       delta <- deltas
+	    }
+            d3 <- array(dim=c(length(enes), primeira, size), dimnames=list(n=enes, d=nomes))
+   for(p in 1:primeira){
+	    for(n in 1:length(enes)){
+		    d3[n, p,] <- replicate(size, teste(amostra(enes[n], j, 0), amostra(enes[n], j, delta[p] ), k , alpha[p]))
+	       }
+	    }
+	    resultado[[i]][[j]][[k]] <- apply(d3, MARGIN=c(1,2), FUN=mean)
+	    #cat(knitr::kable(resultado[[i]][[j]][[k]], 'latex'))
+            heatmap(resultado[[i]][[j]][[k]], Colv = NA, Rowv = NA, scale="column")
+	    cat("\n\n")
+         }
+      }
+   }
+}
+
+main()
+```
