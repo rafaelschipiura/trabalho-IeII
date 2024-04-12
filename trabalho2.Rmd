@@ -1,32 +1,31 @@
 ---
-title: Trabalho de Estatística Computacional sobre erros Tipo I e Tipo II    
+title: |
+   | Estatística Computacional
+   | Erros Tipo I e Tipo II    
 author:    
-   - Rafael Alisson Schipiura    
+   - Rafael Alisson Schipiura
    - Matheus Born Cabús 
 date: 9 de Abril de 2024    
 output:    
-   pdf_document:
+   beamer_presentation:    
+      theme: "Antibes"
+      colortheme: "beaver"
+      fonttheme: "structurebold"
+      slide_level: 3 
       latex_engine: xelatex
 ---
-<!--
-   beamer_presentation:    
-      theme: "AnnArbor"
-      colortheme: "dolphin"
-      fonttheme: "structurebold"
-      slide_level: 3    
-      latex_engine: xelatex
--->
 
 ```{r, echo=FALSE}
 options(digits=3)
 RNGkind("Mersenne-Twister")
 RNGversion("4.1.2")
 set.seed(1752031105)
-library(formatR, ggplot2, reshape2)
+library(formatR)
+library(ggplot2)
+library(reshape2)
+library(RColorBrewer)
 knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 50), tidy = TRUE)
-knitr::opts_chunk$set(dev = 'pdf', fig.width=6, fig.height=5, fig.align='center')
-```
-```{r, echo=FALSE}
+knitr::opts_chunk$set(dev = 'pdf', fig.width=4.5, fig.height=2.5, fig.align='center')
 teste <- function(amostra1, amostra2, qual, sig){
 	if(qual == 'Teste t de Student'){
 		teste <- t.test
@@ -35,8 +34,6 @@ teste <- function(amostra1, amostra2, qual, sig){
 	}
 	return(teste(amostra1, amostra2)$p.value < sig)
 }
-```
-```{r, echo=FALSE}
 amostra <- function(n, distro, delta){
 
    if(distro == 'Poisson'){
@@ -49,29 +46,24 @@ amostra <- function(n, distro, delta){
       return(rnorm(n, mean=20+delta, sd=2))
    }
 }
-```
-```{r, echo=FALSE}
-f1 <- function(x){4*x - 1.5 * x^2 + 0.5 * x^3}
-f2 <- function(x){-(0.02 + 2/300)*x + 0.0525*x^2 - (0.018 + 1/3000)*x^3 + 0.0025*x^4}
-f3 <- function(x){round(10^(x - 0.522879), digits=0)}
+f1 <- function(x){round(1 + 10.8073*x^3 - 0.778646*x^4 - 1.27604*x^5 + 0.247396*x^6, digits=0)}
+f2 <- function(x){4 * 2^x}
 ```
 ```{r, echo=FALSE, results='asis'}
 main <- function(){
-   simulacoes <- c('Trade-Off Beta', 'Curva do Poder do Teste')
-   distros <- c('Normal')#, 'Exponencial', 'Gamma')
-   testes <- c('Teste t de Student')#, 'Teste de Wilcoxon')
-   ndeltas <- 10 
-   deltas <- seq(from=-1.5, to=1.5, length.out=ndeltas)
+   simulacoes <- c('Curva do Poder do Teste','Trade-Off Beta')
+   distros <- c('Normal', 'Exponencial', 'Gamma')
+   testes <- c('Teste t de Student', 'Teste de Wilcoxon')
+   ndeltas <- 29 
+   deltas <- seq(from=-3, to=3, length.out=ndeltas)
    delta_fixo <- 0.1
-   h1 <- 1 
-   numalphas <- f1(h1)
-   seql <- 3 * 0:numalphas/numalphas + 1
-   alphas <- f2(seql)
+   h1 <- 1
+   numalphas <- f2(h1)
+   seql <- (4 * 0:numalphas)/numalphas
+   alphas <- f1(seql)/1000
    alpha_fixo <- 0.05
-   h2 <- 1
-   numtam <- f1(h2)
-   seqm <- 3 * 0:numtam/numtam + 1
-   enes <- f3(seqm)
+   num_enes <- 4
+   enes <- 3 * 10^(0:(num_enes-1))
    size <- 3000 
 
    resultado <- vector('list', length(simulacoes))
@@ -93,30 +85,43 @@ main <- function(){
 	       delta <- rep(delta_fixo, primeira)
             } else {
                primeira <- ndeltas
-	       nomes <- paste("delta=", deltas)
+	       nomes <- deltas
 	       alpha <- rep(alpha_fixo, primeira)
 	       delta <- deltas
 	    }
-            d3 <- array(dim=c(length(enes), primeira, size), dimnames=list(n=enes, d=nomes))
+            d3 <- array(dim=c(num_enes, primeira, size), dimnames=list(n=enes, d=nomes))
    for(p in 1:primeira){
-	    for(n in 1:length(enes)){
+	    for(n in 1:num_enes){
 		    d3[n, p,] <- replicate(size, teste(amostra(enes[n], j, 0), amostra(enes[n], j, delta[p] ), k , alpha[p]))
 	       }
 	    }
 	    matriz <- apply(d3, MARGIN=c(1,2), FUN=mean)
-	    #cat(knitr::kable(matriz, 'latex'))
             if (i == 'Trade-Off Beta'){
-	       plot <- melt(matriz)
-	       plot$n <- sprintf("%04d",plot$n)
-               print(ggplot(data=plot,aes(x=n, y=d)) + geom_tile(aes(fill = value), color = "white", lwd = 0.1, linetype = 1) + coord_fixed() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) + guides(fill = guide_colourbar(barwidth = 0.5, barheight = 20, title = "Poder")) + xlab("Tamanho da Amostra") + ylab("Significância") + geom_text(aes(label = sprintf('%.02f%%', 100*value)), color = "white", size = 4))
+	       matriz_longa <- melt(matriz)
+	       matriz_longa$n <- sprintf("%04d",matriz_longa$n)
+               print(ggplot(data=matriz_longa, aes(x=n, y=d)) +
+		     geom_tile(aes(fill = value), color = "white", lwd = 0.1, linetype = 1) + 
+		     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) + 
+		     guides(fill = guide_colourbar(barwidth = 0.5, barheight = 8, title = "Poder")) + xlab("Tamanho da Amostra") + ylab("Significância") +
+		     geom_text(aes(label = sprintf('%.02f%%', 100*value)), color = "white", size = 3))
 	    } else {
-	    
+	       matriz_longa <- melt(matriz)
+	       plot <- ggplot(data= matriz_longa, aes(x=d))
+	       nomes_legenda <- sprintf("%04d", enes)
+	       legenda <- brewer.pal(num_enes, "Set3")
+	       for(l in 1:num_enes){
+	          #cat(knitr::kable(matriz_longa[matriz_longa$n==l,], 'latex'))
+	          select <- matriz_longa[matriz_longa$n==enes[l],]
+	          select$cor <- rep(nomes_legenda[l], nrow(select))
+	          plot <- plot + geom_line(data=select, aes(y=value, color=cor))
+	       }
+	       plot <- plot + scale_color_manual(name='n', breaks=nomes_legenda, values=legenda) + xlab("Delta") + ylab("Poder")# + geom_vline(xintercept=c(c(-1,1)%*%t(c(0.5, 1.5))))
+	       print(plot)
 	    }
 	    cat("\n\n")
          }
       }
    }
 }
-
 main()
 ```
