@@ -24,7 +24,7 @@ library(formatR)
 library(ggplot2)
 library(reshape2)
 library(RColorBrewer)
-knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 45), tidy = TRUE)
+knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 40), tidy = TRUE)
 knitr::opts_chunk$set(dev = 'pdf', fig.width=10, fig.height=2.5, fig.align='center', out.height = '30%')
 ```
 
@@ -122,9 +122,9 @@ $$
 
 Avalia $\beta$ sob $H_a$:
 
- - $y_A \sim N(\mu_0, \sigma_A^2)$.
+ - $y_A \sim \mathcal{N}(\mu_0, \sigma_A^2)$.
 
- - $y_B \sim N(\mu_0 + \delta, \sigma_B^2)$.
+ - $y_B \sim \mathcal{N}(\mu_0 + \delta, \sigma_B^2)$.
 
 $$
 R_i: \text{ resultado do i-ésimo teste, indicando erro tipo II}
@@ -132,9 +132,6 @@ $$
 $$
 R_i = \left\{ \begin{array}{ll} 0: \quad \text{rejeita $H_0$} \\ 1: \quad \text{não rejeita $H_0$} \end{array} \right.
 $$
-
-## Formulação matemática
-
 $$
 \hat{\beta}= \frac{1}{n}\sum_{i=1}^n R_i
 $$
@@ -145,10 +142,9 @@ $$
 ## Código
 
 ```{r, eval=FALSE}
-teste <- function(amostra1, amostra2, sig){t.test(amostra1, amostra2)$p.value < sig}
 amostra <- function(n, delta){rnorm(n, mean=20+delta, sd=2)}
 alpha <- 0.05;delta <- 0.1;ene <- 30;size <- 3000 
-matriz[n][delta][alpha] <- mean(replicate(size, teste(amostra(ene, 0), amostra(ene, delta),  alpha)))
+matriz[n][delta] <- mean( replicate( size, (t.test( amostra( ene, 0 ), amostra( ene, delta )) >  alpha )))
 ggplot(data=matriz, aes(x=ene, y=delta)) +
       geom_tile(aes(fill = value)) 
 ```
