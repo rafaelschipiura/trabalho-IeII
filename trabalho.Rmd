@@ -9,16 +9,16 @@ date: 12 de Abril de 2024
 fontsize: 11pt
 output:    
    beamer_presentation:    
-      theme: "Antibes"
-      colortheme: "beaver"
-      fonttheme: "structurebold"
+      theme: 'Antibes'
+      colortheme: 'beaver'
+      fonttheme: 'structurebold'
       slide_level: 2 
       latex_engine: xelatex
 ---
 
 ```{r, echo=FALSE}
-RNGkind("Mersenne-Twister")
-RNGversion("4.1.2")
+RNGkind('Mersenne-Twister')
+RNGversion('4.1.2')
 set.seed(1752031105)
 library(formatR)
 library(ggplot2)
@@ -176,34 +176,34 @@ f1 <- function(x){round(1 + 10.8073*x^3 - 0.778646*x^4 - 1.27604*x^5 + 0.247396*
 f2 <- function(x){round(4 * 2^x)}
 f3 <- function(x){round(10^(x+log10(3)))}
 main <- function(){
-   simulacoes <- c('Curva do Poder do Teste','Trade-Off Beta')
-   distros <- c('Normal', 'Uniforme', 'Exponencial')#, 'Gamma')
-   testes <- c('Teste t de Student', 'Teste de Wilcoxon')
-   ndeltas <- 59
+   simulacoes <- c('Curva do Poder do Teste')#,'Trade-Off Beta')
+   distros <- c('Normal')#, 'Uniforme', 'Exponencial')#, 'Gamma')
+   testes <- c('Teste t de Student')#, 'Teste de Wilcoxon')
+   ndeltas <- 5#9
    deltas <- seq(from=-3, to=3, length.out=ndeltas)
    delta_fixo <- 0.1
-   h1 <- 1
+   h1 <- 0#1
    numalphas <- f2(h1)
    seql <- (4 * 0:numalphas)/numalphas
    alphas <- f1(seql)/1000
    alpha_fixo <- 0.05
-   h2 <- 2 
+   h2 <- 0#2 
    fim_enes <- f2(h2)
    seqn <- (4 * 0:fim_enes)/fim_enes
    num_enes <- fim_enes + 1
    enes <- f3(seqn)
-   size <- 3000 
+   size <- 300#0 
 
    for(i in simulacoes){
-      cat("# ", i, "\n\n")
+      cat('# ', i, '\n\n')
       for(j in distros){
-         cat("## Distribuição", j, "\n\n")
+         cat('## Distribuição', j, '\n\n')
 	 for(k in testes){
-	    cat("### ", k, "\n\n")
+	    cat('### ', k, '\n\n')
             if (i == 'Trade-Off Beta'){
 	       enes_q <- enes 
 	       primeira <- length(alphas)
-	       nomes <- paste0(round(alphas * 100, digits=2), "%")
+	       nomes <- paste0(round(alphas * 100, digits=2), '%')
 	       alpha <- alphas 
 	       delta <- rep(delta_fixo, primeira)
             } else {
@@ -222,27 +222,27 @@ main <- function(){
 	    matriz <- apply(d3, MARGIN=c(1,2), FUN=mean)
             if (i == 'Trade-Off Beta'){
 	       matriz_longa <- melt(matriz)
-	       matriz_longa$n <- sprintf("%05d",matriz_longa$n)
+	       matriz_longa$n <- sprintf('%05d',matriz_longa$n)
                print(ggplot(data=matriz_longa, aes(x=n, y=d)) +
-		     geom_tile(aes(fill = value), color = "white", lwd = 0.1, linetype = 1) + 
+		     geom_tile(aes(fill = value), color = 'white', lwd = 0.1, linetype = 1) + 
 		     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) + 
-		     guides(fill = guide_colourbar(barwidth = 0.5, barheight = 8, title = "Poder")) + xlab("Tamanho da Amostra") + ylab("Significância") +
-		     geom_text(aes(label = sprintf('%.02f%%', 100*value)), color = "white", size = 3))
+		     guides(fill = guide_colourbar(barwidth = 0.5, barheight = 8, title = 'Poder')) + xlab('Tamanho da Amostra') + ylab('Significância') +
+		     geom_text(aes(label = sprintf('%.02f%%', 100*value)), color = 'white', size = 3))
 	    } else {
 	       matriz_longa <- melt(matriz)
 	       plot <- ggplot(data= matriz_longa, aes(x=d))
-	       nomes_legenda <- sprintf("%5d", enes_q)
-	       legenda <- brewer.pal(length(enes_q), "Set3")
+	       nomes_legenda <- sprintf('%5d', enes_q)
+	       legenda <- brewer.pal(length(enes_q), 'Set3')
 	       for(l in 1:length(enes_q)){
 	          #cat(knitr::kable(matriz_longa[matriz_longa$n==l,], 'latex'))
 	          select <- matriz_longa[matriz_longa$n==enes_q[l],]
 	          select$cor <- rep(nomes_legenda[l], nrow(select))
 	          plot <- plot + geom_line(data=select, aes(y=value, color=cor))
 	       }
-	       plot <- plot + scale_color_manual(name='n', breaks=nomes_legenda, values=legenda) + xlab("Delta") + ylab("Poder")# + geom_vline(xintercept=c(c(-1,1)%*%t(c(0.5, 1.5))))
+	       plot <- plot + scale_color_manual(name='n', breaks=nomes_legenda, values=legenda) + xlab('Delta') + ylab('Poder')# + geom_vline(xintercept=c(c(-1,1)%*%t(c(0.5, 1.5))))
 	       print(plot)
 	    }
-	    cat("\n\n")
+	    cat('\n\n')
          }
       }
    }
