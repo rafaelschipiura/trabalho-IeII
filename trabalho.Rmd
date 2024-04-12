@@ -1,167 +1,257 @@
 ---
-title: Trabalho de Estatística Computacional sobre erros Tipo I e Tipo II    
+title: |
+   | Estatística Computacional
+   | Erros Tipo I e Tipo II    
 author:    
-   - Rafael Alisson Schipiura    
+   - Rafael Alisson Schipiura
    - Matheus Born Cabús 
-date: 9 de Abril de 2024    
-fontsize: 8pt    
+date: 12 de Abril de 2024    
+fontsize: 11pt
 output:    
    beamer_presentation:    
-      slide_level: 2    
+      theme: "Antibes"
+      colortheme: "beaver"
+      fonttheme: "structurebold"
+      slide_level: 2 
       latex_engine: xelatex
 ---
 
-```{r echo=FALSE}
-options(digits=3)
+```{r, echo=FALSE}
 RNGkind("Mersenne-Twister")
 RNGversion("4.1.2")
 set.seed(1752031105)
 library(formatR)
-knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 50), tidy = TRUE)
+library(ggplot2)
+library(reshape2)
+library(RColorBrewer)
+knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 45), tidy = TRUE)
+knitr::opts_chunk$set(dev = 'pdf', fig.width=10, fig.height=2.5, fig.align='center', out.height = '30%')
 ```
 
-## Parâmetros 
+## Delineação do Problema
 
-```{r}
-main <- function(){
-   tamanhos <- 3 * 10 ^ c(0:3)
-   significancias <- c(0.1, 0.05, 0.01)
-   distribuicoes <- c('Normal', 'Poisson')#, 'Gamma', 'Exponencial')
-   for (d in distribuicoes){
-   trabalho(tamanhos, significancias, d)
-   }
+Existe um trade-off entre:
+
+ - $\alpha$ (probabilidade de erro tipo I)
+
+ - $\beta$ (probabilidade de erro tipo II)
+
+ - $\delta$ (tamanho da diferença a ser detectada)
+
+ - $n$ (tamanho da amostra)
+
+Este trabalho procura explorar esse espaço, usando simulação computacional.
+
+## Especificamente...
+
+Realizamos testes para encontrar diferenças de médias entre duas populações.
+
+## Outras Influências
+
+Também influenciam no problema:
+
+ - Distribuição da população (e seus parâmetros).
+
+ - Métodos estatísticos usados.
+
+## Distribuições
+
+Para exploração, variamos a distribuição da população entre:
+
+ - Normal. $y_i \sim \mathcal{N}(20, 4)$;
+
+ - Uniforme. $y_i \sim U(10, 30)$;
+
+ - Exponencial. $y_i \sim Exp(1/20)$.
+
+A média populacional foi fixada em 20, e os outros parâmetros também fixos.
+
+## Métodos Estatísticos
+
+Os métodos escolhidos foram:
+
+ - Um método paramétrico: Teste t de Student.
+
+ - Um método não-paramétrico: Teste de Wilcoxon.
+
+Os testes foram realizados para cada população, variando os parâmetros a serem explorados.
+
+## Dimensionalidade
+
+O espaço a ser explorado tem 4 dimensões. O que produziria gráficos 4D que são difíceis de colocar em slides.
+
+Então fixamos um dos parâmetros de interesse e variamos os outros três. Nos gráficos, as duas primeiras variáveis são apresentadas nos eixos das coordenadas e abcissas e o terceiro através de cor.
+
+## Primeira Fase 
+
+Primeiro, fixamos o nível de significância $\alpha = 5\%$.
+
+Os resultado são curvas do poder do teste de acordo com a diferença entre as médias das populações. Uma curva para cada tamanho de amostra.
+
+Essas curvas foram apresentadas pelo professor Festa em Controle Estatístico de Qualidade.
+
+## Segunda Fase
+
+Na segunda, fixamos a diferença entre as médias $\delta = 0,1$.
+
+O resultado são matrizes do poder do teste, variando o nível de significância e o tamanho da amostra.
+
+Se determinarmos o que é "a menor diferença significativa", podemos determinar o tamanho da amostra necessária para atingir o poder do teste almejado, com certo nível de significância.
+
+Esse procedimento foi apresentado pelo professor Lucambio em Análise de Experimentos, no contexto de regressão linear.
+
+## Formulação matemática
+
+$$
+\text{Teste de diferença entre duas médias:} \left\{ \begin{array}{ll} H_0: \quad \mu_A = \mu_B \\ H_a: \quad \mu_A \ne \mu_B \end{array} \right.
+$$
+$$
+n = 30
+$$
+$$
+\alpha = 0.05
+$$
+$$
+\delta = 0.1
+$$
+$$
+\beta = ?
+$$
+
+## Formulação matemática
+
+Avalia $\beta$ sob $H_a$:
+
+ - $y_A \sim N(\mu_0, \sigma_A^2)$.
+
+ - $y_B \sim N(\mu_0 + \delta, \sigma_B^2)$.
+
+$$
+R_i: \text{ resultado do i-ésimo teste, indicando erro tipo II}
+$$
+$$
+R_i = \left\{ \begin{array}{ll} 0: \quad \text{rejeita $H_0$} \\ 1: \quad \text{não rejeita $H_0$} \end{array} \right.
+$$
+
+## Formulação matemática
+
+$$
+\hat{\beta}= \frac{1}{n}\sum_{i=1}^n R_i
+$$
+$$
+\text{Poder do teste:} \quad 1 - \hat{\beta}
+$$
+
+## Código
+
+```{r, eval=FALSE}
+teste <- function(amostra1, amostra2, sig){t.test(amostra1, amostra2)$p.value < sig}
+amostra <- function(n, delta){rnorm(n, mean=20+delta, sd=2)}
+alpha <- 0.05;delta <- 0.1;ene <- 30;size <- 3000 
+matriz[n][delta][alpha] <- mean(replicate(size, teste(amostra(ene, 0), amostra(ene, delta),  alpha)))
+ggplot(data=matriz, aes(x=ene, y=delta)) +
+      geom_tile(aes(fill = value)) 
+```
+
+```{r, echo=FALSE}
+teste <- function(amostra1, amostra2, qual, sig){
+	if(qual == 'Teste t de Student'){
+		teste <- t.test
+	} else {
+		teste <- wilcox.test
+	}
+	return(teste(amostra1, amostra2)$p.value < sig)
 }
-```
+amostra <- function(n, distro, delta){
 
-## Para cada distribuição:
-
-```{r}
-trabalho <- function(tamanhos_m, significancias_m, distro_m){
-   simulacoes <- 300
-   pontos <- 10
-   resul_amostras <- vector("list",length(tamanhos_m))
-   for(n in 1:length(tamanhos_m)){
-      resul_amostras[[n]] <- simula_s(tamanhos_m[n], significancias_m, distro=distro_m, pontos_s=pontos, sim_amos=simulacoes)
-   }
-   names(resul_amostras) <- tamanhos_m
-   slides(resul_amostras, paste0("Distribuição ", distro_m, ", n ="))
-   
-   resul_signif <- vector("list",length(significancias_m))
-   for(s in 1:length(significancias_m)){
-      resul_signif[[s]] <- simula_n(tamanhos_m, significancias_m[s], distro=distro_m, pontos_n=pontos, sim_amos=simulacoes)
-   }
-   names(resul_signif) <- significancias_m
-   slides(resul_signif, paste0("Distribuição ", distro_m, ", $\\alpha$ ="))
-
-}
-
-```
-
-## Teste 
-
-```{r}
-teste <- function(amostra_i, amostra_j, sig_i = 0.05){
-   return((t.test(amostra_i, amostra_j))$p.value < sig_i)
-}
-
-```
-
-## Sorteio da amostra 
-
-```{r}
-
-amostra <- function(n_a, distro, param1, param2){
-   
-   if       (distro == 'Normal'){
-      return(rnorm(n_a, mean=param1, sd=param2))
-   } else if(distro == 'Poisson'){
-      return(rpois(n_a, lambda=param1))
+   if(distro == 'Poisson'){
+      return(rpois(n, lambda=20+delta))
    } else if(distro == 'Gamma'){
-      return(rgamma(n_a, shape=param1/param2, scale=param2))
+      return(rgamma(n, shape=(20+delta)/2, scale=2))
+   } else if(distro == 'Uniforme'){
+      return(runif(n, min=(10+delta), max=(30+delta)))
    } else if(distro == 'Exponencial'){
-      return(rexp(n_a, rate=1/param1))
+      return(rexp(n, rate=1/(20+delta)))
+   } else {
+      return(rnorm(n, mean=20+delta, sd=2))
    }
 }
+f1 <- function(x){round(1 + 10.8073*x^3 - 0.778646*x^4 - 1.27604*x^5 + 0.247396*x^6)}
+f2 <- function(x){round(4 * 2^x)}
+f3 <- function(x){round(10^(x+log10(3)))}
+main <- function(){
+   simulacoes <- c('Curva do Poder do Teste','Trade-Off Beta')
+   distros <- c('Normal', 'Uniforme', 'Exponencial')#, 'Gamma')
+   testes <- c('Teste t de Student', 'Teste de Wilcoxon')
+   ndeltas <- 59
+   deltas <- seq(from=-3, to=3, length.out=ndeltas)
+   delta_fixo <- 0.1
+   h1 <- 1
+   numalphas <- f2(h1)
+   seql <- (4 * 0:numalphas)/numalphas
+   alphas <- f1(seql)/1000
+   alpha_fixo <- 0.05
+   h2 <- 2 
+   fim_enes <- f2(h2)
+   seqn <- (4 * 0:fim_enes)/fim_enes
+   num_enes <- fim_enes + 1
+   enes <- f3(seqn)
+   size <- 3000 
 
+   for(i in simulacoes){
+      cat("# ", i, "\n\n")
+      for(j in distros){
+         cat("## Distribuição", j, "\n\n")
+	 for(k in testes){
+	    cat("### ", k, "\n\n")
+            if (i == 'Trade-Off Beta'){
+	       enes_q <- enes 
+	       primeira <- length(alphas)
+	       nomes <- paste0(round(alphas * 100, digits=2), "%")
+	       alpha <- alphas 
+	       delta <- rep(delta_fixo, primeira)
+            } else {
+	       enes_q <- 3 * 10^(0:3)
+               primeira <- ndeltas
+	       nomes <- deltas
+	       alpha <- rep(alpha_fixo, primeira)
+	       delta <- deltas
+	    }
+            d3 <- array(dim=c(length(enes_q), primeira, size), dimnames=list(n=enes_q, d=nomes))
+   for(p in 1:primeira){
+	    for(n in 1:length(enes_q)){
+		    d3[n, p,] <- replicate(size, teste(amostra(enes_q[n], j, 0), amostra(enes_q[n], j, delta[p] ), k , alpha[p]))
+	       }
+	    }
+	    matriz <- apply(d3, MARGIN=c(1,2), FUN=mean)
+            if (i == 'Trade-Off Beta'){
+	       matriz_longa <- melt(matriz)
+	       matriz_longa$n <- sprintf("%05d",matriz_longa$n)
+               print(ggplot(data=matriz_longa, aes(x=n, y=d)) +
+		     geom_tile(aes(fill = value), color = "white", lwd = 0.1, linetype = 1) + 
+		     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) + 
+		     guides(fill = guide_colourbar(barwidth = 0.5, barheight = 8, title = "Poder")) + xlab("Tamanho da Amostra") + ylab("Significância") +
+		     geom_text(aes(label = sprintf('%.02f%%', 100*value)), color = "white", size = 3))
+	    } else {
+	       matriz_longa <- melt(matriz)
+	       plot <- ggplot(data= matriz_longa, aes(x=d))
+	       nomes_legenda <- sprintf("%5d", enes_q)
+	       legenda <- brewer.pal(length(enes_q), "Set3")
+	       for(l in 1:length(enes_q)){
+	          #cat(knitr::kable(matriz_longa[matriz_longa$n==l,], 'latex'))
+	          select <- matriz_longa[matriz_longa$n==enes_q[l],]
+	          select$cor <- rep(nomes_legenda[l], nrow(select))
+	          plot <- plot + geom_line(data=select, aes(y=value, color=cor))
+	       }
+	       plot <- plot + scale_color_manual(name='n', breaks=nomes_legenda, values=legenda) + xlab("Delta") + ylab("Poder")# + geom_vline(xintercept=c(c(-1,1)%*%t(c(0.5, 1.5))))
+	       print(plot)
+	    }
+	    cat("\n\n")
+         }
+      }
+   }
+}
 ```
-
-## Sorteamos uma amostra e executamos os testes pra cada significância 
-
-```{r echo=FALSE}
-
-varia_n <- function(n_n, sig_n, tipoII=FALSE, distro_n, param_n = 20, pontos){
-   
-   amostra_n <- amostra(max(n_n), distro=distro_n, param1=param_n, param2=2)
-   amostra_m <- amostra(max(n_n), distro=distro_n, param1=param_n + 0.5 * tipoII, param2=3)
-
-   n10 <- floor(seq(from=min(n_n), to=max(n_n), length.out=pontos))
-   resultado <- logical(length=pontos) 
-   for(n_j in 1:pontos){
-      resultado[n_j] <- teste( sample(amostra_n, n10[n_j]), sample(amostra_m, n10[n_j]), sig_n)
-
-   }
-   return(resultado)
-}
-
-```
-
-```{r}
-
-varia_s <- function(n_s, sig_s, tipoII=FALSE, distro_s, param_s = 20, pontos){
-   amostra_s <- amostra(n_s, distro=distro_s, param1=param_s, param2=2)
-   amostra_r <- amostra(n_s, distro=distro_s, param1=param_s + 0.5 * tipoII, param2=3)
-
-   s10 <- seq(from=min(sig_s), to=max(sig_s), length.out=pontos)
-   resultado <- logical(length=pontos) 
-   for(s_j in 1:pontos){
-      resultado[s_j] <- teste(amostra_s, amostra_r, s10[s_j])
-   }
-   return(resultado)
-}
-
-```
-
-## Simulação amostral
-
-```{r echo=FALSE}
-simula_n <- function(n_n, sig_n, distro, pontos_n, sim_amos){
-   D3 <- array(dim=c(pontos_n, 2, sim_amos))
-   for(i in 1:sim_amos){
-	   D3[,1,i] <- varia_n(n_n, sig_n, tipoII=FALSE, distro_n=distro, pontos=pontos_n)
-	   D3[,2,i] <- !(varia_n(n_n, sig_n, tipoII=TRUE, distro_n=distro, pontos=pontos_n))
-   }
-   result <- apply(D3, MARGIN=c(1,2), FUN=mean)
-   colnames(result) <- c("Tipo I", "Tipo II")
-   return(result)
-}
-```
-
-```{r}
-
-simula_s <- function(n_s, sig_s, distro, pontos_s, sim_amos){
-   D3 <- array(dim=c(pontos_s, 2, sim_amos))
-   for(i in 1:sim_amos){
-	   D3[,1,i] <- varia_s(n_s, sig_s, tipoII=FALSE, distro_s=distro, pontos=pontos_s)
-	   D3[,2,i] <- !(varia_s(n_s, sig_s, tipoII=TRUE, distro_s=distro, pontos=pontos_s))
-   }
-   result <- apply(D3, MARGIN=c(1,2), FUN=mean)
-   colnames(result) <- c("Tipo I", "Tipo II")
-   return(result)
-}
-```
-
-## Resultado 
-
-```{r, results='asis'}
-slides <- function(lista, titulo){
-   for(l in names(lista)){
-      cat("\n## ", titulo, " ", l, "\n\n")
-      #cat(knitr::kable(lista[[l]], "latex"), "\n\n")
-      plot(lista[[l]], type='l', xlim=c(0.001,0.122), ylim=c(0, 1))
-      abline(v=c(0.1, 0.05, 0.01))
-      cat("\n\n")
-   }
-}
-
+```{r, echo=FALSE, results='asis', eval=TRUE}
 main()
 ```
