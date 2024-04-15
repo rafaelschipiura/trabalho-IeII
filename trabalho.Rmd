@@ -1,11 +1,9 @@
 ---
-title: |
-   | Estatística Computacional
-   | Erros Tipo I e Tipo II    
+title: Explorando Erros de Inferência com Simulações Computacionais 
 author:    
    - Rafael Alisson Schipiura
    - Matheus Born Cabús 
-date: 12 de Abril de 2024    
+date: 15 de Abril de 2024    
 fontsize: 11pt
 output:    
    beamer_presentation:    
@@ -16,7 +14,7 @@ output:
       latex_engine: xelatex
 ---
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE}
 RNGkind('Mersenne-Twister')
 RNGversion('4.1.2')
 set.seed(1752031105)
@@ -24,6 +22,10 @@ library(formatR)
 library(ggplot2)
 library(reshape2)
 library(RColorBrewer)
+library(gridExtra)
+library(MASS)
+library(Hmisc)
+library(scatterplot3d)
 knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 40), tidy = TRUE)
 knitr::opts_chunk$set(dev = 'pdf', fig.width=10, fig.height=2.5, fig.align='center', out.height = '30%')
 ```
@@ -42,9 +44,125 @@ Existe um trade-off entre:
 
 Este trabalho procura explorar esse espaço, usando simulação computacional.
 
+```{r include=TRUE, echo=FALSE, message=FALSE, fig.width=9.5, fig.align='center'}
+# Definir os parâmetros das distribuições
+media_H0 <- 100
+sd_H0 <- 15
+media_H1 <- 130
+sd_H1 <- 15
+
+# Criar uma sequência de valores para o eixo x
+x_values <- seq(50, 180, length.out = 1000)
+
+# Calcular as densidades para H0 e H1
+densidade_H0 <- dnorm(x_values, mean = media_H0, sd = sd_H0)
+densidade_H1 <- dnorm(x_values, mean = media_H1, sd = sd_H1)
+
+# Definir o ponto de corte para os erros Tipo I e Tipo II
+ponto_corte <- 117
+
+# Criar o gráfico
+ggplot() +
+  geom_line(aes(x = x_values, y = densidade_H0), color = "#377EB8") +
+  geom_line(aes(x = x_values, y = densidade_H1), color = "#D55E00") +
+  geom_area(aes(x = x_values, y = densidade_H0), data = data.frame(x_values, densidade_H0)[x_values >= ponto_corte,], fill = "#F0E442", alpha = 0.5) +
+  geom_area(aes(x = x_values, y = densidade_H1), data = data.frame(x_values, densidade_H1)[x_values <= ponto_corte,], fill = "#009E73", alpha = 0.5) +
+  annotate("text", x = media_H0, y = max(densidade_H0)/2, label = "Hipótese Nula", vjust = 1.5, color = "#377EB8") +
+  annotate("text", x = media_H1, y = max(densidade_H1)/2, label = "Hipótese Alternativa", vjust = 1.5, color = "#D55E00") +
+  annotate("text", x = ponto_corte + 10, y = max(densidade_H0)/20, label = "Erro Tipo I", color = "black") +
+  annotate("text", x = ponto_corte - 10, y = max(densidade_H1)/20, label = "Erro Tipo II", color = "black") +
+  theme_minimal() +
+  theme(legend.position = "none",
+        plot.title = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())
+```
+
+## Estudando o problema
+
+```{r include=TRUE, echo=FALSE, message=FALSE, out.height = '80%', fig.height=2.5, fig.asp = 1, fig.align='center'}
+
+# Definindo o número de pontos para cada gráfico
+n_values <- c(10, 100, 1000, 10000)
+
+# Inicializando uma lista para armazenar os gráficos
+graficos <- list()
+
+# Gerando os gráficos
+set.seed(123)  # para reprodutibilidade
+for (i in 1:4) {
+  # Gerando duas séries de números aleatórios com duas modas diferentes
+  x <- c(rnorm(n_values[i]/2, mean = -2), rnorm(n_values[i]/2, mean = 2))
+  y <- c(rnorm(n_values[i]/2, mean = -2), rnorm(n_values[i]/2, mean = 2))
+
+  # Criando um data frame com os pontos
+  dados <- data.frame(x = x, y = y)
+
+  # Criando o gráfico de dispersão
+  grafico <- ggplot(dados, aes(x = x, y = y)) +
+    geom_point(alpha = 0.5) +
+    labs(title = paste(n_values[i], "pontos")) +
+    theme_minimal() +
+    theme(legend.position = "none",
+          plot.title = element_text(hjust = 0.5),
+          axis.title.x = element_blank(),
+          axis.title.y = element_blank(),
+          axis.text.x = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks = element_blank()) +
+    coord_cartesian(xlim = c(-6, 6), ylim = c(-6, 6))  # Definindo a mesma escala para todos os gráficos
+
+  # Adicionando o gráfico à lista
+  graficos[[i]] <- grafico
+}
+
+# Exibindo os gráficos em duas linhas e duas colunas
+grid.arrange(grobs = graficos, ncol = 2)
+```
+
 ## Especificamente...
 
 Realizamos testes para encontrar diferenças de médias entre duas populações.
+
+```{r include=TRUE, echo=FALSE, message=FALSE, fig.width=9.5, fig.align='center', out.height = '60%', fig.height=2.5, fig.asp = .5}
+
+# Carregando o conjunto de dados mtcars
+data(mtcars)
+
+# Realizando o teste t para comparar a média de mpg para carros com 4 e 6 cilindros
+# t.test(mpg ~ as.factor(cyl), data = mtcars[mtcars$cyl %in% c(4,6), ])
+
+# Calculando os intervalos de confiança
+ic_4 <- mean_cl_normal(mtcars[mtcars$cyl == 4, ]$mpg)
+ic_6 <- mean_cl_normal(mtcars[mtcars$cyl == 6, ]$mpg)
+
+# Calculando a média dos limites dos intervalos de confiança
+media_ic <- mean(c(ic_4$ymin, ic_6$ymax))
+
+# Criando um gráfico de violino para visualizar a diferença
+ggplot(mtcars[mtcars$cyl %in% c(4,6), ], aes(x = as.factor(cyl), y = mpg)) +
+  geom_violin(fill = "#377EB8", alpha = 0.5) +
+  geom_jitter(width = 0.2, color = "#D55E00") +
+  stat_summary(fun = mean, geom = "point", shape = 23, size = 3, fill = "white") +
+  stat_summary(fun.data = mean_cl_normal, geom = "errorbar", width = 0.2, color = "#F0E442") +
+  annotate("segment", x = 1.5, xend = 1.5, y = ic_4$ymin, yend = ic_6$ymax, linetype = "dashed", color = "black") +
+  annotate("segment", x = 1, xend = 2, y = media_ic, yend = media_ic, linetype = "dashed", color = "black") +
+  labs(x = "Número de Cilindros", y = "Milhas por Galão (mpg)", title = "Comparação de MPG por Número de Cilindros") +
+  theme_minimal() +
+  theme(legend.position = "none",
+        plot.title = element_text(hjust = 0.5),
+        axis.title.x = element_text(face = "bold"),
+        axis.title.y = element_text(face = "bold"),
+        axis.text.x = element_text(face = "bold"),
+        axis.text.y = element_text(face = "bold"),
+        panel.grid.major = element_line(linetype = "solid", color = "grey90"),
+        panel.grid.minor = element_line(linetype = "solid", color = "grey95"))
+```
 
 ## Outras Influências
 
@@ -80,6 +198,22 @@ Os testes foram realizados para cada população, variando os parâmetros a sere
 
 O espaço a ser explorado tem 4 dimensões. O que produziria gráficos 4D que são difíceis de colocar em slides.
 
+```{r, echo=FALSE, message=FALSE, fig.align='center', out.height = '30%', fig.height=2.5, fig.asp = 1}
+
+# Criando dados de exemplo
+alpha <- seq(0.01, 0.1, length.out = 10)
+beta <- seq(0.01, 0.1, length.out = 10)
+delta <- seq(0.01, 0.1, length.out = 10)
+
+# Criando uma grade de valores para as três variáveis
+grid_values <- expand.grid(alpha = alpha, beta = beta, delta = delta)
+
+# Calculando o poder do teste (apenas para fins de exemplo)
+grid_values$poder <- runif(nrow(grid_values))
+
+# Criando o gráfico tridimensional
+scatterplot3d(grid_values$alpha, grid_values$beta, grid_values$delta, color=rainbow(nrow(grid_values), start=0, end=.3), pch=19, xlab="Alpha", ylab="Beta", zlab="Delta")
+```
 Então fixamos um dos parâmetros de interesse e variamos os outros três. Nos gráficos, as duas primeiras variáveis são apresentadas nos eixos das coordenadas e abcissas e o terceiro através de cor.
 
 ## Primeira Fase 
@@ -176,7 +310,7 @@ f1 <- function(x){round(1 + 10.8073*x^3 - 0.778646*x^4 - 1.27604*x^5 + 0.247396*
 f2 <- function(x){round(4 * 2^x)}
 f3 <- function(x){round(10^(x+log10(3)))}
 main <- function(){
-   simulacoes <- c('Curva do Poder do Teste')#,'Trade-Off Beta')
+   simulacoes <- c('Curva do Poder do Teste','Trade-Off Beta')
    distros <- c('Normal')#, 'Uniforme', 'Exponencial')#, 'Gamma')
    testes <- c('Teste t de Student')#, 'Teste de Wilcoxon')
    ndeltas <- 5#9
@@ -187,7 +321,7 @@ main <- function(){
    seql <- (4 * 0:numalphas)/numalphas
    alphas <- f1(seql)/1000
    alpha_fixo <- 0.05
-   h2 <- 0#2 
+   h2 <- 0
    fim_enes <- f2(h2)
    seqn <- (4 * 0:fim_enes)/fim_enes
    num_enes <- fim_enes + 1
@@ -225,7 +359,7 @@ main <- function(){
 	       matriz_longa$n <- sprintf('%05d',matriz_longa$n)
                print(ggplot(data=matriz_longa, aes(x=n, y=d)) +
 		     geom_tile(aes(fill = value), color = 'white', lwd = 0.1, linetype = 1) + 
-		     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) + 
+		     #theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) + 
 		     guides(fill = guide_colourbar(barwidth = 0.5, barheight = 8, title = 'Poder')) + xlab('Tamanho da Amostra') + ylab('Significância') +
 		     geom_text(aes(label = sprintf('%.02f%%', 100*value)), color = 'white', size = 3))
 	    } else {
